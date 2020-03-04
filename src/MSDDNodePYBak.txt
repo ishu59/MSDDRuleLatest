@@ -1,0 +1,153 @@
+class MSDDNode:
+    '''
+    Hashable
+    '''
+
+    def __init__(self, token_chain: Union[str, List[List]], p_width: int = None, s_width: int = None, delay: int = None,
+                 depth: int = 0, count: int = 0,
+                 cost: float = 0, parent=None):
+        self.name = token_chain
+        if isinstance(token_chain, str):
+            self.pre_token: Set[MSDDToken] = set()
+            self.suc_token: Set[MSDDToken] = set()
+        else:
+            assert (isinstance(token_chain, (list, tuple))), "Token should be a list of List"
+            for e in token_chain:
+                assert (isinstance(e, (list, tuple))), "Token should be a list of List"
+            assert (len(token_chain) >= (p_width + s_width + delay)), "Length of token is less than required"
+            self.pre_token: Set[MSDDToken] = self.get_multitoken(token_chain[:p_width], start_time=0)
+            self.suc_token: Set[MSDDToken] = self.get_multitoken(token_chain[p_width + delay:p_width + delay + s_width],
+                                                                 start_time=(p_width + delay))
+        self.children: Dict = {}
+        self.cost: float = cost
+        self.depth: int = depth
+        self.count: int = count
+        self.parent: MSDDNode = parent
+
+    def is_leaf(self) -> bool:
+        return len(self.children) == 0
+
+    def increase_count(self):
+        self.count += 1
+
+    def get_multitoken(self, token_chain, start_time) -> Set[MSDDToken]:
+        token_set: Set[MSDDToken] = set()
+        for time_stream_index, single_time_stream in enumerate(token_chain):
+            for elem_index, elem in enumerate(single_time_stream):
+                # tok = MSDDToken(value=elem, stream_index=elem_index, time_offset=(start_time + time_stream_index))
+                if elem != '*':
+                    token_set.add(
+                        MSDDToken(value=elem, stream_index=elem_index, time_offset=(start_time + time_stream_index)))
+                    # token_set.append(
+                    #     MSDDToken(value=elem, stream_index=elem_index, time_offset=(start_time + time_stream_index)))
+        return token_set
+
+    def __str__(self):
+        return "(P:" + str(self.pre_token) + ", S:" + str(self.suc_token) + ")"
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class TrieStructure:
+    unq_token_dict: Dict[Tuple, MSDDNode] = {}
+    token_tree_pointer: Dict[Tuple, List[MSDDNode]] = {}
+    WILDCARD = '*'
+
+    def __init__(self, root_token, precursor_width, successor_width, delay):
+        self.delay = delay
+        self.successor_width = successor_width
+        self.root = MSDDNode(root_token, depth=0, count=1)
+        self.precursor_width = precursor_width
+
+    @staticmethod
+    def get_row_combination(data: List[str]) -> List[List[str]]:
+        if len(data) == 1:
+            return [[data[0]], [TrieStructure.WILDCARD]]
+        curr_list = TrieStructure.get_row_combination(data[1:])
+        result_list = []
+        for index in range(len(curr_list)):
+            a = [[data[0]] + curr_list[index]]
+            b = [[TrieStructure.WILDCARD] + curr_list[index]]
+            result_list.extend(a)
+            result_list.extend(b)
+        # result_tuple = tuple(tuple(x) for x in result_list)
+        return result_list
+
+    @staticmethod
+    def convert_tuple(data: List[List[List[str]]]) -> Tuple[Tuple[Tuple[str]]]:
+        return tuple(tuple(tuple(x) for x in inner_list) for inner_list in data)
+
+    @staticmethod
+    def get_all_combination(data: List[List[str]]) -> List[List[List[str]]]:
+        keeper = []
+        for row in data:
+            res = TrieStructure.get_row_combination(row)
+            keeper.append(res)
+        if len(data) > 1:
+            output = []
+            for item in product(*keeper):
+                output.append((item))
+            return TrieStructure.convert_tuple(output)
+        else:
+            return TrieStructure.convert_tuple(keeper)
+
+    @staticmethod
+    def remove_pruneable(self):
+        pass
+
+    def systematic_expand(self, tokens):
+        tokens = TrieStructure.get_all_combination(tokens)
+        return tokens
+
+    def add_token_to_node(self, node_tokens: Tuple, current_node: MSDDNode):
+        for token in node_tokens:
+            depth = current_node.depth
+            if token not in current_node.children:
+                newNode = MSDDNode(token, depth=(depth + 1), count=1, parent=current_node)
+                current_node.children[token] = newNode
+                if token not in TrieStructure.token_tree_pointer:
+                    TrieStructure.token_tree_pointer[token] = []
+                TrieStructure.token_tree_pointer[token].append(newNode)
+                if token not in TrieStructure.unq_token_dict:
+                    TrieStructure.unq_token_dict[token] = newNode
+            else:
+                current_node.children[token].increase_count()
+            current_node = current_node.children[token]
+
+    def add_chain(self, token: Tuple):
+        assert (len(token) > 0)
+        # if token[0] in TrieStructure.unq_token_dict:
+        if False:
+            current_token_node = TrieStructure.unq_token_dict[token[0]]
+            self.add_token_to_node(token, current_token_node.parent)
+        else:
+            self.add_token_to_node(token, self.root)
+
+    def print_depth_first(self, starting_token: MSDDNode = None):
+        if starting_token is None:
+            return
+        cur: MSDDNode = starting_token
+        if cur.is_leaf():
+            path_list = []
+            while (cur is not None):
+                path_list.append(cur.token)
+                cur = cur.parent
+            path_list.reverse()
+            pprint(path_list)
+        else:
+            for child in cur.children.values():
+                self.print_depth_first(child)
+
+
+    # def get_multitoken(self, token_chain, start_time) -> Set[MSDDToken]:
+    #     token_set: Set[MSDDToken] = set()
+    #     for time_stream_index, single_time_stream in enumerate(token_chain):
+    #         for elem_index, elem in enumerate(single_time_stream):
+    #             if elem != '*':
+    #                 token_set.add(
+    #                     MSDDToken(value=elem, stream_index=elem_index,
+    #                               time_offset=(start_time + time_stream_index)))
+    #                 # token_set.append(
+    #                 #     MSDDToken(value=elem, stream_index=elem_index, time_offset=(start_time + time_stream_index)))
+    #     return token_set
