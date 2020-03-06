@@ -13,9 +13,9 @@ class MSDDToken:
         self.value = value
 
     def __str__(self):
-        return str(self.value)
+        # return str(self.value)
         # return str(dict(v=self.value))
-        # return str(dict(v=self.value, s=self.stream_index, t=self.time_offset))
+        return str(dict(v=self.value, s=self.stream_index, t=self.time_offset))
 
     def __repr__(self):
         return self.__str__()
@@ -31,9 +31,17 @@ class MSDDToken:
     def __hash__(self):
         return hash(self.__repr__())
 
+    def __ge__(self, other):
+        if self.stream_index != other.stream_index:
+            # raise Exception("Cannot compare between different streams")
+            return True
+        if other.value >= self.value:
+            return False
+
     def __lt__(self, other):
         if self.stream_index != other.stream_index:
-            raise Exception("Cannot compare between different streams")
+            # raise Exception("Cannot compare between different streams")
+            return True
         if other.value < self.value:
             return False
         # if other.stream_index < self.stream_index:
