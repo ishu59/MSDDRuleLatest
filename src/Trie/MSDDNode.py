@@ -35,13 +35,19 @@ class MSDDToken:
         if self.stream_index != other.stream_index:
             # raise Exception("Cannot compare between different streams")
             return True
+
         if other.value >= self.value:
             return False
 
     def __lt__(self, other):
+        if self is None:
+            return True
+        if other is None:
+            return False
         if self.stream_index != other.stream_index:
             # raise Exception("Cannot compare between different streams")
             return True
+
         if other.value < self.value:
             return False
         # if other.stream_index < self.stream_index:
@@ -49,6 +55,21 @@ class MSDDToken:
         # if other.time_offset < self.time_offset:
         #     return False
         return True
+
+
+if __name__ == '__main__':
+    print("")
+    t1 = MSDDToken('A', 0 , 0)
+    t2 = MSDDToken('B', 0 , 0)
+    t3 = MSDDToken('', 0, 0)
+    print(t1 > t2)
+    print(t1 < t2)
+
+    # print(None < t1)
+    a = [t1,t2, t3]
+    print(sorted(a))
+
+
 
 
 # class MSDDNodeElement:

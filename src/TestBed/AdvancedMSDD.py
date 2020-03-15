@@ -2,14 +2,14 @@ import os, sys
 from itertools import combinations, product
 from pprint import pprint
 import math
-from TestBed.NodeAndTree import NewMSDDTrieStructure
+from TestBed.AdvancedNodeTree import AdvMSDDTrieStructure
 from utils.TokenGen import create_msdd_token
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))  # 'rules' module
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from typing import List, Dict, Union, Tuple
 from collections import defaultdict, Set
 import numpy as np
-from utils.CombinationTree import compute_comb
+from utils.CombinationTree import compute_comb_adv
 from Trie.MSDDNode import MSDDToken
 
 
@@ -26,7 +26,7 @@ class SimpleMSDD:
         self.min_score = -1 * math.inf
         self.open_list = [[[], []]]
         self.visited = []
-        self.tree = NewMSDDTrieStructure()
+        self.tree = AdvMSDDTrieStructure()
 
     def validate_token(self, p, s):
         for pc in p:
@@ -58,8 +58,8 @@ class SimpleMSDD:
         children = []
         prec_list = create_msdd_token(tp, start_time=0)
         succ_list = create_msdd_token(ts, start_time=wp + delta)
-        prec = compute_comb(prec_list)
-        succ = compute_comb(succ_list)
+        prec = compute_comb_adv(prec_list)
+        succ = compute_comb_adv(succ_list)
         for comb in product(prec, succ):
             p = comb[0]
             s = comb[-1]
@@ -99,9 +99,8 @@ class SimpleMSDD:
                 if len(node_score) > 0:
                     node.cost = min(node_score)
 
-        children2 = [node for node in child_nodes if node.cost > min_score]
-        # children2 = list(zip(node))
-        children = self.tree.get_all_children_with_min_score(min_score)
+        children = [node for node in child_nodes if node.cost > min_score]
+
         return children
 
     def compute_g_score(self, n1_x_y, n2_x_not_y, n3_not_x_y, n4_not_x_not_y):
@@ -246,10 +245,6 @@ def test_Simple_msdd():
     np.random.seed(0)
     s0 = np.random.choice(['A', 'B', 'C', 'D'], size=30)
     s1 = np.random.choice([1, 2], size=30)
-    # S= 'S'
-    # I = 'I'
-    # R = 'R'
-
     stream = list(zip(s0, s1))
     best = []
     k = 2
