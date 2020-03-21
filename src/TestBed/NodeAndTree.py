@@ -45,20 +45,6 @@ class NewMSDDNode:
     def __str__(self):
         return '(T:' + str(self.final_token) + ",C:" + str(self.count) + ")"
 
-    # def __eq__(self, other):
-    #
-    #
-    # def __ne__(self, other):
-    #     return not self == other
-    #
-    # def __hash__(self):
-    #     return hash(self.__repr__())
-    #
-    # def __ge__(self, other):
-    #
-    #
-    # def __lt__(self, other):
-    #
 
 class NewMSDDTrieStructure:
     def __init__(self, root_token=None):
@@ -93,7 +79,8 @@ class NewMSDDTrieStructure:
                 current_node.children[token].increase_count()
             current_node = current_node.children[token]
         current_node.precursor_child.append(p_tok)
-        current_node.successor_child.append(s_tok)
+        if s_tok not in current_node.successor_child:
+            current_node.successor_child.append(s_tok)
 
     def get_all_children(self, node=None):
         all_childs = []
@@ -104,7 +91,7 @@ class NewMSDDTrieStructure:
                 all_childs.append(ps)
             for child in node.children.values():
                 all_childs.extend(self.get_all_children(child))
-            return all_childs
+        return all_childs
 
     def get_all_children_nodes(self, node=None):
         all_childs = []
@@ -116,7 +103,6 @@ class NewMSDDTrieStructure:
             for child in node.children.values():
                 all_childs.extend(self.get_all_children_nodes(child))
         return all_childs
-
 
     def get_all_children_nodes_tok(self, search_tok):
         prec, succ = search_tok
@@ -142,7 +128,6 @@ class NewMSDDTrieStructure:
             cur = cur.children[character]
 
         return cur
-
 
     def get_all_children_with_min_score(self, min_score, node=None):
         all_childs = []

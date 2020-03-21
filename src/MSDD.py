@@ -3,6 +3,8 @@ from typing import List, Dict, Tuple
 import heapq
 import numpy as np
 from itertools import product
+
+from SIROrderingEnum import SIRS
 from Trie.AnotherTrie import NewTrieStructure
 from utils.pptree import print_tree
 from utils.CombinationTree import compute_comb
@@ -89,6 +91,13 @@ def test_msdd():
     tree= NewTrieStructure()
     print_tree(tree.root)
     stream = "ABCDABCDABABABBABACCCCDDACADBBBB"
+
+
+    sir = [c for c in 'SIRSIRSIRSIRSIRS']
+    stream = []
+    for item in sir:
+        stream.append(SIRS[item])
+
     for i in range(len(stream)):
         if i+wp+delta+ws >= len(stream):
             break

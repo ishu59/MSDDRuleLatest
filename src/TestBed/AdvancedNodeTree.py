@@ -29,7 +29,9 @@ class TokenPair:
 
 class AdvMSDDNode:
     def __init__(self, token, depth: int, count: int, parent=None, cost: float = 0, is_prec: bool = True):
-        self.children:Dict[Tuple[MSDDToken],AdvMSDDNode] = {}
+        self.children: Dict[Tuple[MSDDToken], AdvMSDDNode] = {}
+        self.precursor: Dict[Tuple[MSDDToken], AdvMSDDNode] = {}
+        self.successor: Dict[Tuple[MSDDToken], AdvMSDDNode] = {}
         self.token = token if token else ''
         self.cost: float = cost
         self.depth: int = depth
@@ -37,7 +39,6 @@ class AdvMSDDNode:
         self.dead = False
         self.parent: AdvMSDDNode = parent
         self.final_token: TokenPair = None
-        self.is_prec: bool = is_prec
 
     def set_final_token(self, p, s):
         self.final_token = TokenPair(precursor=p, successor=s)
@@ -53,7 +54,7 @@ class AdvMSDDNode:
         # return str({'Token': self.final_token})
 
     def __str__(self):
-        return '(T:' + str(self.final_token) + ",C:" + str(self.count) + ")"
+        return '(P:' + str(self.token) + ')' # + ",S:" + str(self.successor) + ")"
 
 
 class AdvMSDDTrieStructure:
@@ -71,21 +72,20 @@ class AdvMSDDTrieStructure:
         s_tok = sorted(s_tok) if len(s_tok) > 0 else []
         for token in p_tok:
             depth = current_node.depth
-            if token in current_node.children and current_node.children[token].is_prec:
-                current_node.children[token].increase_count()
+            if token in current_node.precursor:
+                current_node.precursor[token].increase_count()
             else:
                 newNode = AdvMSDDNode(token, depth=(depth + 1), count=1, parent=current_node)
-                current_node.children[token] = newNode
-            current_node = current_node.children[token]
+                current_node.precursor[token] = newNode
+            current_node = current_node.precursor[token]
         for token in s_tok:
             depth = current_node.depth
-            if token in current_node.children and not current_node.children[token].is_prec:
-                current_node.children[token].increase_count()
+            if token in current_node.successor:
+                current_node.successor[token].increase_count()
             else:
-                newNode = AdvMSDDNode(token, depth=(depth + 1), count=1, parent=current_node, is_prec=False)
-                current_node.children[token] = newNode
-
-            current_node = current_node.children[token]
+                newNode = AdvMSDDNode(token, depth=(depth + 1), count=1, parent=current_node)
+                current_node.successor[token] = newNode
+            current_node = current_node.successor[token]
         current_node.set_final_token(p=p_tok, s=s_tok)
 
     def get_all_children(self, node=None):
@@ -125,6 +125,7 @@ class AdvMSDDTrieStructure:
     def search(self, search_token):
         if len(search_token) < 1:
             return None
+
         cur = self.root
         for i, character in enumerate(search_token):
             if i == len(search_token):
@@ -151,30 +152,6 @@ class AdvMSDDTrieStructure:
                 all_childs.extend(self.get_all_children(child))
             return all_childs
 
-    def print_depth_first(self, starting_token: AdvMSDDNode = None):
-        if starting_token is None:
-            return
-        cur: AdvMSDDNode = starting_token
-        if cur.is_leaf():
-            path_list = []
-            while (cur is not None):
-                path_list.append(cur.token)
-                cur = cur.parent
-            path_list.reverse()
-            pprint(path_list)
-        else:
-            for child in cur.children.values():
-                self.print_depth_first(child)
-
-    def reset_count(self, node: AdvMSDDNode = None):
-        if node is None:
-            node = self.root
-        node.count = 0
-        for n in node.precursor_child.values():
-            self.reset_count(n)
-        for n in node.successor_child.values():
-            self.reset_count(n)
-
 
 def test_new_trie():
     print('')
@@ -184,8 +161,35 @@ def test_new_trie():
     succ = compute_comb_adv(['C', 'D'])
     for item in product(prec, succ):
         t.add_token(item[0], item[1])
-    print_tree(t.root, childattr='children')
+    # print_tree(t.root, childattr='children')
+    print_tree(t.root, childattr='successor')
+    print_tree(t.root, childattr='precursor')
+    print("")
 
 
 if __name__ == '__main__':
     test_new_trie()
+
+# def print_depth_first(self, starting_token: AdvMSDDNode = None):
+#        if starting_token is None:
+#            return
+#        cur: AdvMSDDNode = starting_token
+#        if cur.is_leaf():
+#            path_list = []
+#            while (cur is not None):
+#                path_list.append(cur.token)
+#                cur = cur.parent
+#            path_list.reverse()
+#            pprint(path_list)
+#        else:
+#            for child in cur.children.values():
+#                self.print_depth_first(child)
+#
+#    def reset_count(self, node: AdvMSDDNode = None):
+#        if node is None:
+#            node = self.root
+#        node.count = 0
+#        for n in node.precursor_child.values():
+#            self.reset_count(n)
+#        for n in node.successor_child.values():
+#            self.reset_count(n)
